@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>[활동1] 가전제품 소비전력 비교하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --paper:#F3F4EF;
+    --panel:#FFFFFF;
+    --ink:#1F2A33;
+    --ink-soft:#5B6670;
+    --teal:#2F6F62;
+    --teal-dark:#204D43;
+    --amber:#E8A33D;
+    --copper:#A9683C;
+    --line:#D8DCD3;
+    --danger:#B5484A;
+    --good:#2F6F62;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(47,111,98,0.055) 28px),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    line-height:1.5;
+    padding:20px 14px 60px;
+  }
+  .sheet{max-width:760px; margin:0 auto;}
+
+  header.hero{
+    position:relative;
+    background:var(--teal);
+    color:#fff;
+    border-radius:var(--radius);
+    padding:22px 22px 18px;
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+  header.hero svg.trace{position:absolute; inset:0; width:100%; height:100%; opacity:0.16;}
+  header.hero .eyebrow{
+    font-size:13px; color:var(--amber); font-weight:600; letter-spacing:0.02em; position:relative;
+  }
+  header.hero h1{
+    font-family:'Gowun Dodum', sans-serif;
+    font-size:28px; margin:4px 0 10px; position:relative; font-weight:400;
+  }
+  header.hero p{margin:0; font-size:14px; color:#E7EFEC; position:relative; max-width:520px;}
+  .idbar{
+    display:flex; gap:10px; margin-top:16px; position:relative; flex-wrap:wrap;
+  }
+  .idbar label{font-size:12.5px; color:#DCEAE5; display:flex; flex-direction:column; gap:4px; flex:1; min-width:120px;}
+  .idbar input{
+    border:none; border-radius:8px; padding:8px 10px; font-size:14px;
+    font-family:'Noto Sans KR', sans-serif; background:rgba(255,255,255,0.92); color:var(--ink);
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 18px 20px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-family:'Gowun Dodum', sans-serif;
+    font-weight:400;
+    font-size:19px;
+    margin:0 0 4px;
+    color:var(--teal-dark);
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%;
+    background:var(--teal); color:#fff; font-size:13px; font-family:'Noto Sans KR';
+    flex:none;
+  }
+  .card .desc{font-size:13.5px; color:var(--ink-soft); margin:0 0 14px;}
+  .desc b{color:var(--copper);}
+
+  /* 가전제품 보관함 */
+  .tray{
+    display:flex; flex-wrap:wrap; gap:8px;
+    padding:12px; border-radius:10px;
+    background:repeating-linear-gradient(135deg, rgba(169,104,60,0.06), rgba(169,104,60,0.06) 8px, transparent 8px, transparent 16px);
+    border:1px dashed var(--copper);
+    margin-bottom:14px;
+  }
+  .chip{
+    touch-action:none; user-select:none; -webkit-user-select:none;
+    display:flex; align-items:center; gap:6px;
+    background:#fff; border:1.5px solid var(--copper); color:var(--ink);
+    border-radius:20px; padding:6px 12px 6px 8px; font-size:13px; font-weight:500;
+    cursor:grab; box-shadow:0 1px 2px rgba(0,0,0,0.06);
+    transition:opacity .15s, transform .1s;
+  }
+  .chip .ic{font-size:16px;}
+  .chip .w-badge{font-size:10.5px; color:var(--copper); font-weight:700; margin-left:1px;}
+  .chip.placed-ghost{opacity:0.35;}
+  .chip.dragging{position:fixed; z-index:999; box-shadow:0 6px 18px rgba(0,0,0,0.22); pointer-events:none;}
+
+  /* 전개도(평면도) 스타일 배치도 */
+  .floorplan{
+    position:relative; display:grid;
+    grid-template-columns:1.15fr 1fr;
+    grid-template-rows:104px 1fr 92px;
+    grid-template-areas:
+      "kitchen bath"
+      "living living"
+      "hall utility";
+    border:5px solid var(--ink); border-radius:6px; overflow:hidden;
+    height:420px; margin-bottom:14px; box-shadow:0 3px 12px rgba(0,0,0,0.08);
+  }
+  @media (max-width:480px){ .floorplan{height:400px; grid-template-rows:88px 1fr 84px;} }
+  .zone{
+    border:2px solid var(--ink); padding:7px 8px 6px; position:relative;
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .zone.over{outline:3px solid var(--teal); outline-offset:-5px; filter:brightness(0.97);}
+  .zone-kitchen{grid-area:kitchen; background:repeating-linear-gradient(45deg,#FBFBF8,#FBFBF8 10px,#F2ECDD 10px,#F2ECDD 11px);}
+  .zone-bath{grid-area:bath; background:
+      repeating-linear-gradient(0deg,#E9F3F6,#E9F3F6 12px,#D9EAEF 12px,#D9EAEF 13px),
+      repeating-linear-gradient(90deg,transparent,transparent 12px,#D9EAEF 12px,#D9EAEF 13px);}
+  .zone-living{grid-area:living; background:repeating-linear-gradient(90deg,#FBF8F1,#FBF8F1 26px,#F0E9D7 26px,#F0E9D7 27px);}
+  .zone-utility{grid-area:utility; background:repeating-linear-gradient(45deg,#FBFBF8,#FBFBF8 10px,#F2ECDD 10px,#F2ECDD 11px);}
+  .hall{
+    grid-area:hall; border:2px solid var(--ink); background:#EFEEE8;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:11px; gap:2px;
+  }
+  .hall .door-ic{font-size:19px;}
+  .zone .zone-title{
+    font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:4px; flex:none;
+  }
+  .zone .zone-body{display:flex; flex-wrap:wrap; align-content:flex-start; gap:5px; flex:1; overflow-y:auto;}
+  .placed-chip{
+    display:flex; align-items:center; gap:5px;
+    background:#fff; border:1.5px solid var(--teal); border-radius:16px;
+    padding:3px 8px; font-size:11.5px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.08);
+  }
+  .placed-chip .x{color:var(--danger); font-weight:700; margin-left:2px;}
+
+  .counter-bar{
+    display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; font-size:13px;
+  }
+  .counter-bar .pill{
+    padding:6px 12px; border-radius:20px; background:#EEF1EC; color:var(--ink-soft); font-weight:600;
+  }
+  .counter-bar .pill.ok{background:#E4EEE9; color:var(--teal-dark);}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:6px;}
+  thead th{
+    background:var(--teal); color:#fff; font-weight:600; padding:8px 4px; font-size:12px;
+  }
+  th, td{border:1px solid var(--line); padding:5px 4px; text-align:center;}
+  td.name-cell{text-align:left; font-weight:600; padding-left:8px; white-space:nowrap;}
+  tbody tr:nth-child(even){background:#FAFAF7;}
+  input.num-in{
+    width:56px; border:1px solid var(--line); border-radius:6px; padding:4px; font-size:12.5px; text-align:center;
+    font-family:'Noto Sans KR';
+  }
+  input[type="radio"]{width:15px; height:15px; accent-color:var(--teal);}
+  td.wh-cell{font-weight:700; color:var(--teal-dark);}
+  tfoot td{font-weight:700; background:#F0F3EE;}
+  .empty-row td{color:var(--ink-soft); font-style:normal; padding:14px;}
+
+  .apply-q{margin-bottom:12px;}
+  .apply-q .q{font-size:13.5px; font-weight:600; margin-bottom:5px;}
+  .apply-q select, .apply-q input[type=text]{
+    font-family:'Noto Sans KR'; font-size:13.5px; padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    width:100%;
+  }
+  textarea{
+    width:100%; min-height:56px; font-family:'Noto Sans KR'; font-size:13.5px;
+    border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical;
+  }
+
+  .pagebreak{
+    text-align:center; color:var(--ink-soft); font-size:11.5px; margin:22px 0 10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .pagebreak::before, .pagebreak::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .save-bar{
+    text-align:center; margin-top:6px;
+  }
+  .save-btn{
+    background:var(--teal); color:#fff; border:none; font-weight:700; font-size:14px;
+    padding:12px 22px; border-radius:24px; cursor:pointer; box-shadow:0 3px 10px rgba(32,77,67,0.25);
+  }
+  .save-btn:active{filter:brightness(0.95);}
+  .save-hint{font-size:12px; color:var(--ink-soft); margin-top:8px;}
+  .save-status{font-size:12.5px; color:var(--teal-dark); margin-top:8px; display:none;}
+  .save-status.show{display:block;}
+
+  @media print{
+    body{background:#fff; padding:0;}
+    .card, header.hero{break-inside:avoid;}
+    .pagebreak{page-break-before:always; margin:0; visibility:hidden; height:0;}
+    input, select, textarea{border:1px solid #999;}
+    .save-bar{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="hero">
+    <svg class="trace" viewBox="0 0 700 160" preserveAspectRatio="none">
+      <path d="M0 40 H140 V10 H320 V60 H500 V20 H700" stroke="#fff" stroke-width="2" fill="none" stroke-dasharray="4 6"/>
+      <path d="M0 130 H180 V150 H400 V110 H620 V140 H700" stroke="#fff" stroke-width="2" fill="none" stroke-dasharray="4 6"/>
+      <circle cx="140" cy="40" r="4" fill="#fff"/><circle cx="320" cy="10" r="4" fill="#fff"/>
+      <circle cx="500" cy="60" r="4" fill="#fff"/><circle cx="180" cy="130" r="4" fill="#fff"/>
+      <circle cx="400" cy="150" r="4" fill="#fff"/><circle cx="620" cy="110" r="4" fill="#fff"/>
+    </svg>
+    <div class="eyebrow">1차시 · 에너지 전환과 보존 탐구</div>
+    <h1>[활동1] 가전제품 소비전력 비교하기</h1>
+    <p>우리 집 곳곳의 가전제품을 배치하고, 전기에너지가 어떤 에너지로 바뀌는지, 얼마나 많은 전력량을 쓰는지 알아봅시다.</p>
+    <div class="idbar">
+      <label>학번<input type="text" placeholder="학번을 입력하세요"></label>
+      <label>이름<input type="text" placeholder="이름을 입력하세요"></label>
+    </div>
+  </header>
+
+  <!-- 1. 배치도 -->
+  <section class="card">
+    <h2><span class="num">1</span> 배치도에 가전제품 놓아보기</h2>
+    <p class="desc">아래 <b>가전제품 보관함</b>에서 칩을 눌러 원하는 공간으로 드래그해 놓아보세요. <b>10개 이상</b>, <b>5가지 종류 이상의 에너지 전환</b>이 포함되도록 골라봅시다. (다시 빼려면 놓인 칩을 눌러주세요)</p>
+
+    <div class="tray" id="tray"></div>
+
+    <div class="floorplan">
+      <div class="zone zone-kitchen" data-zone="주방"><span class="zone-title">🍳 주방</span><div class="zone-body"></div></div>
+      <div class="zone zone-bath" data-zone="화장실"><span class="zone-title">🚿 화장실</span><div class="zone-body"></div></div>
+      <div class="zone zone-living" data-zone="거실·침실"><span class="zone-title">🛋️ 거실·침실</span><div class="zone-body"></div></div>
+      <div class="hall"><span class="door-ic">🚪</span>현관</div>
+      <div class="zone zone-utility" data-zone="다용도실"><span class="zone-title">🧺 다용도실</span><div class="zone-body"></div></div>
+    </div>
+
+    <div class="counter-bar">
+      <span class="pill" id="cnt-pill">놓은 가전제품 0개</span>
+      <span class="pill" id="type-pill">에너지 전환 종류 0가지</span>
+    </div>
+    <div class="save-bar">
+      <button class="save-btn" id="save-img-1">📸 이 배치도 이미지로 저장하기</button>
+      <div class="save-status" id="save-status-1">이미지를 만드는 중이에요...</div>
+    </div>
+  </section>
+
+  <!-- 2,3,4. 표 -->
+  <section class="card">
+    <h2><span class="num">2</span> 전기에너지 전환 기록 &amp; 전력량 계산기</h2>
+    <p class="desc">배치한 가전제품이 자동으로 표에 추가됩니다. <b>주된 에너지 전환</b>에 하나씩 체크하고, 소비전력(W)과 사용시간(h)을 입력하면 전력량(Wh)이 <b>자동으로 계산</b>됩니다. 소비전력은 보관함 칩에 표시된 "약 ○○○W"를 참고해서 직접 입력해보세요.</p>
+    <p class="desc" style="margin-top:-8px;">※ 사용시간은 <b>하루 동안 실제로 사용한 시간(h)</b>을 입력해요. 분 단위는 소수로 바꿔서 적어요. (예: 30분 → 0.5, 15분 → 0.25)</p>
+    <div style="overflow-x:auto;">
+    <table id="calc-table">
+      <thead>
+        <tr>
+          <th style="width:16%">가전제품</th>
+          <th>열</th><th>빛</th><th>운동</th><th>소리</th><th>화학</th>
+          <th style="width:13%">소비전력<br>(W)</th>
+          <th style="width:13%">사용시간(h)<br><span style="font-weight:400;font-size:10px;">하루 기준</span></th>
+          <th style="width:14%">전력량<br>(Wh)</th>
+        </tr>
+      </thead>
+      <tbody id="calc-body">
+        <tr class="empty-row"><td colspan="9">↑ 위 배치도에 가전제품을 놓으면 여기에 표시돼요.</td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td colspan="8">전력량 합계</td><td id="total-wh" class="wh-cell">0 Wh</td></tr>
+        <tr><td colspan="8">전력량 합계 (kWh 환산)</td><td id="total-kwh" class="wh-cell">0 kWh</td></tr>
+      </tfoot>
+    </table>
+    </div>
+    <div class="save-bar">
+      <button class="save-btn" id="save-img-2">📸 이 표 이미지로 저장하기</button>
+      <div class="save-status" id="save-status-2">이미지를 만드는 중이에요...</div>
+    </div>
+  </section>
+
+  <div class="pagebreak">2쪽</div>
+
+  <!-- 5. 적용하기 -->
+  <section class="card">
+    <h2><span class="num">3</span> 적용하기</h2>
+    <div class="apply-q">
+      <div class="q">(1) 위 표에서 가장 소비전력이 큰 가전제품은?</div>
+      <input type="text" id="q1">
+    </div>
+    <div class="apply-q">
+      <div class="q">(2) 위 표에서 가장 소비전력이 작은 가전제품은?</div>
+      <input type="text" id="q2">
+    </div>
+    <div class="apply-q">
+      <div class="q">(3) 전기에너지를 주로 <b>열에너지</b>로 전환하는 가전제품은 소비전력이 상대적으로</div>
+      <select id="q3"><option value="">선택하세요</option><option>크다</option><option>작다</option></select>
+    </div>
+    <div class="apply-q">
+      <div class="q">(4) 전기에너지를 주로 <b>빛에너지</b>로 전환하는 가전제품은 소비전력이 상대적으로</div>
+      <select id="q4"><option value="">선택하세요</option><option>크다</option><option>작다</option></select>
+    </div>
+    <div class="save-bar">
+      <button class="save-btn" id="save-img-3">📸 이 답안 이미지로 저장하기</button>
+      <div class="save-hint">저장한 이미지 파일을 구글 클래스룸에 제출하세요.</div>
+      <div class="save-status" id="save-status-3">이미지를 만드는 중이에요...</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const APPLIANCES = [
+  {name:"에어컨", icon:"❄️", type:"열", w:1000},
+  {name:"냉장고", icon:"🧊", type:"열", w:150},
+  {name:"전기스탠드", icon:"💡", type:"빛", w:40},
+  {name:"전기밥솥(취사)", icon:"🍚", type:"열", w:700},
+  {name:"전기밥솥(보온)", icon:"♨️", type:"열", w:100},
+  {name:"정수기", icon:"🚰", type:"열", w:250},
+  {name:"에어프라이기", icon:"🍟", type:"열", w:1400},
+  {name:"전자레인지", icon:"🍲", type:"열", w:1200},
+  {name:"드럼세탁기", icon:"🧺", type:"운동", w:300},
+  {name:"전기다리미", icon:"🧷", type:"열", w:1200},
+  {name:"머리말리개", icon:"💇", type:"열/운동", w:1200},
+  {name:"스마트TV", icon:"📺", type:"빛/소리", w:100},
+  {name:"청소기", icon:"🧹", type:"운동", w:1000},
+  {name:"휴대폰충전", icon:"🔋", type:"화학", w:10},
+  {name:"선풍기", icon:"🌬️", type:"운동", w:50},
+  {name:"LED조명", icon:"🔆", type:"빛", w:10},
+  {name:"노트북", icon:"💻", type:"화학/빛", w:60},
+  {name:"식기세척기", icon:"🍽️", type:"열/운동", w:1200}
+];
+const TYPES = ["열","빛","운동","소리","화학"];
+const placed = {}; // name -> zone
+
+const tray = document.getElementById('tray');
+const calcBody = document.getElementById('calc-body');
+const totalWhCell = document.getElementById('total-wh');
+const totalKwhCell = document.getElementById('total-kwh');
+const cntPill = document.getElementById('cnt-pill');
+const typePill = document.getElementById('type-pill');
+
+function buildTray(){
+  tray.innerHTML = '';
+  APPLIANCES.forEach(a=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.dataset.name = a.name;
+    chip.innerHTML = `<span class="ic">${a.icon}</span>${a.name}<span class="w-badge">약 ${a.w}W</span>`;
+    if(placed[a.name]) chip.classList.add('placed-ghost');
+    attachDrag(chip, a);
+    tray.appendChild(chip);
+  });
+}
+
+function attachDrag(chip, appliance){
+  chip.addEventListener('pointerdown', (e)=>{
+    if(placed[appliance.name]) return; // 이미 배치됨 - 존에서 눌러 빼야 함
+    e.preventDefault();
+    const rect = chip.getBoundingClientRect();
+    const ghost = chip.cloneNode(true);
+    ghost.classList.add('dragging');
+    ghost.style.width = rect.width+'px';
+    ghost.style.left = rect.left+'px';
+    ghost.style.top = rect.top+'px';
+    document.body.appendChild(ghost);
+    const offX = e.clientX - rect.left, offY = e.clientY - rect.top;
+
+    function move(ev){
+      ghost.style.left = (ev.clientX - offX)+'px';
+      ghost.style.top = (ev.clientY - offY)+'px';
+      document.querySelectorAll('.zone').forEach(z=>{
+        const r = z.getBoundingClientRect();
+        const inside = ev.clientX>=r.left && ev.clientX<=r.right && ev.clientY>=r.top && ev.clientY<=r.bottom;
+        z.classList.toggle('over', inside);
+      });
+    }
+    function up(ev){
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      ghost.remove();
+      let dropped = null;
+      document.querySelectorAll('.zone').forEach(z=>{
+        const r = z.getBoundingClientRect();
+        const inside = ev.clientX>=r.left && ev.clientX<=r.right && ev.clientY>=r.top && ev.clientY<=r.bottom;
+        z.classList.remove('over');
+        if(inside) dropped = z.dataset.zone;
+      });
+      if(dropped){ placeAppliance(appliance, dropped); }
+    }
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  });
+}
+
+function placeAppliance(appliance, zoneName){
+  if(placed[appliance.name]) return;
+  placed[appliance.name] = zoneName;
+  renderZones();
+  buildTray();
+  renderTable();
+  updateCounters();
+}
+
+function removeAppliance(name){
+  delete placed[name];
+  renderZones();
+  buildTray();
+  renderTable();
+  updateCounters();
+}
+
+function renderZones(){
+  document.querySelectorAll('.zone').forEach(z=>{
+    const zn = z.dataset.zone;
+    const body = z.querySelector('.zone-body');
+    body.innerHTML = '';
+    Object.keys(placed).filter(n=>placed[n]===zn).forEach(n=>{
+      const a = APPLIANCES.find(x=>x.name===n);
+      const pc = document.createElement('div');
+      pc.className = 'placed-chip';
+      pc.innerHTML = `<span>${a.icon}</span>${a.name} <span class="w-badge">${a.w}W</span><span class="x">×</span>`;
+      pc.addEventListener('click', ()=>removeAppliance(n));
+      body.appendChild(pc);
+    });
+  });
+}
+
+function renderTable(){
+  const names = Object.keys(placed);
+  if(names.length===0){
+    calcBody.innerHTML = '<tr class="empty-row"><td colspan="9">↑ 위 배치도에 가전제품을 놓으면 여기에 표시돼요.</td></tr>';
+    totalWhCell.textContent = '0 Wh';
+    totalKwhCell.textContent = '0 kWh';
+    return;
+  }
+  calcBody.innerHTML = '';
+  names.forEach(n=>{
+    const a = APPLIANCES.find(x=>x.name===n);
+    const tr = document.createElement('tr');
+    tr.dataset.name = n;
+    let radios = TYPES.map(t=>`<td><input type="radio" name="type-${n}" value="${t}"></td>`).join('');
+    tr.innerHTML = `<td class="name-cell">${n}</td>${radios}
+      <td><input class="num-in w-in" type="number" min="0" placeholder="W"></td>
+      <td><input class="num-in h-in" type="number" min="0" step="0.1" placeholder="h"></td>
+      <td class="wh-cell wh-out">0</td>`;
+    calcBody.appendChild(tr);
+    const wIn = tr.querySelector('.w-in');
+    const hIn = tr.querySelector('.h-in');
+    const whOut = tr.querySelector('.wh-out');
+    function recalc(){
+      const w = parseFloat(wIn.value)||0;
+      const h = parseFloat(hIn.value)||0;
+      const wh = w*h;
+      whOut.textContent = wh ? wh.toLocaleString(undefined,{maximumFractionDigits:1}) : '0';
+      updateTotal();
+    }
+    wIn.addEventListener('input', recalc);
+    hIn.addEventListener('input', recalc);
+  });
+  updateTotal();
+}
+
+function updateTotal(){
+  let sum = 0;
+  calcBody.querySelectorAll('tr').forEach(tr=>{
+    const wIn = tr.querySelector('.w-in'), hIn = tr.querySelector('.h-in');
+    if(wIn && hIn){ sum += (parseFloat(wIn.value)||0) * (parseFloat(hIn.value)||0); }
+  });
+  totalWhCell.textContent = sum.toLocaleString(undefined,{maximumFractionDigits:1}) + ' Wh';
+  totalKwhCell.textContent = (sum/1000).toLocaleString(undefined,{maximumFractionDigits:3}) + ' kWh';
+}
+
+function updateCounters(){
+  const n = Object.keys(placed).length;
+  cntPill.textContent = `놓은 가전제품 ${n}개`;
+  cntPill.classList.toggle('ok', n>=10);
+
+  const checkedTypes = new Set();
+  calcBody.querySelectorAll('input[type=radio]:checked').forEach(r=>checkedTypes.add(r.value));
+  typePill.textContent = `에너지 전환 종류 ${checkedTypes.size}가지`;
+  typePill.classList.toggle('ok', checkedTypes.size>=5);
+}
+calcBody.addEventListener('change', (e)=>{ if(e.target.type==='radio') updateCounters(); });
+
+buildTray();
+renderZones();
+
+// 이미지로 저장하기 (섹션별)
+function setupSaveButton(btnId, statusId, filename){
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const bar = btn.closest('.save-bar');
+    const status = document.getElementById(statusId);
+    const target = btn.closest('section.card');
+    if(typeof html2canvas === 'undefined'){
+      status.textContent = '이미지 저장 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.';
+      status.classList.add('show');
+      return;
+    }
+    status.textContent = '이미지를 만드는 중이에요...';
+    status.classList.add('show');
+    bar.style.visibility = 'hidden';
+    html2canvas(target, {scale:2, backgroundColor:'#FFFFFF', useCORS:true}).then(canvas=>{
+      bar.style.visibility = 'visible';
+      status.classList.remove('show');
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }).catch(err=>{
+      bar.style.visibility = 'visible';
+      status.textContent = '이미지 저장에 실패했어요. 화면을 캡처해서 제출해주세요.';
+    });
+  });
+}
+setupSaveButton('save-img-1', 'save-status-1', '1차시_활동1_배치도.png');
+setupSaveButton('save-img-2', 'save-status-2', '1차시_활동1_전력량계산표.png');
+setupSaveButton('save-img-3', 'save-status-3', '1차시_활동1_적용하기.png');
+</script>
+</body>
+</html>
