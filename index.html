@@ -168,6 +168,12 @@
     font-family:'Noto Sans KR';
   }
   input[type="radio"]{width:15px; height:15px; accent-color:var(--teal);}
+  .type-cell{
+    width:30px; height:30px; border:1.5px solid var(--line); border-radius:7px; background:#fff;
+    cursor:pointer; font-size:15px; padding:0; line-height:1;
+  }
+  .type-cell.sel{background:#EAF3EE; border-color:var(--teal); color:var(--teal-dark); font-weight:700;}
+  .type-cell.primary{background:#FBF0DA; border-color:var(--amber); color:#8A6A1C; font-weight:800; font-size:16px;}
   td.wh-cell{font-weight:700; color:var(--teal-dark);}
   tfoot td{font-weight:700; background:#F0F3EE;}
   .empty-row td{color:var(--ink-soft); font-style:normal; padding:14px;}
@@ -258,7 +264,7 @@
   <!-- 2,3,4. 표 -->
   <section class="card">
     <h2><span class="num">2</span> 전기에너지 전환 기록 &amp; 전력량 계산기</h2>
-    <p class="desc">배치한 가전제품이 자동으로 표에 추가됩니다. <b>주된 에너지 전환</b>에 하나씩 체크하고, 소비전력(W)과 사용시간(h)을 입력하면 전력량(Wh)이 <b>자동으로 계산</b>됩니다. 소비전력은 보관함 칩에 표시된 "약 ○○○W"를 참고해서 직접 입력해보세요.</p>
+    <p class="desc">배치한 가전제품이 자동으로 표에 추가됩니다. 전환되는 에너지는 <b>여러 개 선택</b>할 수 있어요. 한 번 누르면 ✓(선택), <b>한 번 더 누르면 ★(주된 에너지 전환)</b>로 바뀌고, 또 누르면 선택이 풀려요. <b>★(주된 에너지)는 한 가전제품에 하나만</b> 표시할 수 있어요. 소비전력(W)과 사용시간(h)을 입력하면 전력량(Wh)이 <b>자동으로 계산</b>됩니다. 소비전력은 보관함 칩에 표시된 "약 ○○○W"를 참고해서 직접 입력해보세요.</p>
     <p class="desc" style="margin-top:-8px;">※ 사용시간은 <b>하루 동안 실제로 사용한 시간(h)</b>을 입력해요. 분 단위는 소수로 바꿔서 적어요. (예: 30분 → 0.5, 15분 → 0.25)</p>
     <div style="overflow-x:auto;">
     <table id="calc-table">
@@ -300,12 +306,8 @@
       <input type="text" id="q2">
     </div>
     <div class="apply-q">
-      <div class="q">(3) 전기에너지를 주로 <b>열에너지</b>로 전환하는 가전제품은 소비전력이 상대적으로</div>
-      <select id="q3"><option value="">선택하세요</option><option>크다</option><option>작다</option></select>
-    </div>
-    <div class="apply-q">
-      <div class="q">(4) 전기에너지를 주로 <b>빛에너지</b>로 전환하는 가전제품은 소비전력이 상대적으로</div>
-      <select id="q4"><option value="">선택하세요</option><option>크다</option><option>작다</option></select>
+      <div class="q">(3) 위 표를 참고하여, <b>열에너지</b>로 전환하는 가전제품과 <b>빛에너지</b>로 전환하는 가전제품의 소비전력을 비교하여 서술해봅시다.</div>
+      <textarea id="q3"></textarea>
     </div>
     <div class="save-bar">
       <button class="save-btn" id="save-img-3">📸 이 답안 이미지로 저장하기</button>
@@ -446,8 +448,8 @@ function renderTable(){
     const a = APPLIANCES.find(x=>x.name===n);
     const tr = document.createElement('tr');
     tr.dataset.name = n;
-    let radios = TYPES.map(t=>`<td><input type="radio" name="type-${n}" value="${t}"></td>`).join('');
-    tr.innerHTML = `<td class="name-cell">${n}</td>${radios}
+    let cells = TYPES.map(t=>`<td><button type="button" class="type-cell" data-type="${t}" data-state="none"></button></td>`).join('');
+    tr.innerHTML = `<td class="name-cell">${n}</td>${cells}
       <td><input class="num-in w-in" type="number" min="0" placeholder="W"></td>
       <td><input class="num-in h-in" type="number" min="0" step="0.1" placeholder="h"></td>
       <td class="wh-cell wh-out">0</td>`;
@@ -464,8 +466,32 @@ function renderTable(){
     }
     wIn.addEventListener('input', recalc);
     hIn.addEventListener('input', recalc);
+
+    tr.querySelectorAll('.type-cell').forEach(cell=>{
+      cell.addEventListener('click', ()=>{
+        const cur = cell.dataset.state;
+        if(cur==='none'){
+          cell.dataset.state = 'sel';
+        } else if(cur==='sel'){
+          tr.querySelectorAll('.type-cell').forEach(c=>{ if(c.dataset.state==='primary') applyCellState(c,'sel'); });
+          cell.dataset.state = 'primary';
+        } else {
+          cell.dataset.state = 'none';
+        }
+        applyCellState(cell, cell.dataset.state);
+        updateCounters();
+      });
+    });
   });
   updateTotal();
+}
+
+function applyCellState(cell, state){
+  cell.dataset.state = state;
+  cell.classList.remove('sel','primary');
+  if(state==='sel'){ cell.classList.add('sel'); cell.textContent = '✓'; }
+  else if(state==='primary'){ cell.classList.add('primary'); cell.textContent = '★'; }
+  else { cell.textContent = ''; }
 }
 
 function updateTotal(){
@@ -484,11 +510,10 @@ function updateCounters(){
   cntPill.classList.toggle('ok', n>=10);
 
   const checkedTypes = new Set();
-  calcBody.querySelectorAll('input[type=radio]:checked').forEach(r=>checkedTypes.add(r.value));
+  calcBody.querySelectorAll('.type-cell.primary').forEach(c=>checkedTypes.add(c.dataset.type));
   typePill.textContent = `에너지 전환 종류 ${checkedTypes.size}가지`;
   typePill.classList.toggle('ok', checkedTypes.size>=5);
 }
-calcBody.addEventListener('change', (e)=>{ if(e.target.type==='radio') updateCounters(); });
 
 buildTray();
 renderZones();
